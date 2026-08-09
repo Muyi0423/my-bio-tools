@@ -21,7 +21,7 @@ with col1:
         # 告诉它：我要去 pages 文件夹下的 page1.py
         # 不需要 os.path，不需要 glob，直接指名道姓！
         if st.button("👉 点击进入 IC50 工具", use_container_width=True, type="primary"):
-            st.switch_page("page1.py")
+            st.switch_page("pages/page1.py")
 
 # === 右边卡片：流式配色 (对应 page2) ===
 with col2:
@@ -31,4 +31,4 @@ with col2:
         
         # 【核心修改】直接指向 page2.py
         if st.button("👉 点击进入流式助手", use_container_width=True, type="primary"):
-            st.switch_page("page2.py")
+            st.switch_page("pages/page2.py")

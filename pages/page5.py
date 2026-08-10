@@ -1,4 +1,5 @@
 
+
 import streamlit as st
 import pandas as pd
 
@@ -16,6 +17,17 @@ def show():
         label_visibility="visible"
     )
     
+    # 在搜索栏下方添加 Cytomaton 光谱查看器链接
+    st.divider()
+    st.markdown(
+        '<div style="text-align: center; padding: 12px; background-color: #f0f7ff; border-radius: 8px; border: 1px solid #4A90D9;">'
+        '<a href="https://www.cytomaton.ai/tools/fluorophore-spectrum-viewer" target="_blank" '
+        'style="display: inline-block; padding: 10px 24px; background-color: #4A90D9; color: white; '
+        'text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">'
+        '🔬 在 Cytomaton 光谱查看器中查看完整光谱</a></div>',
+        unsafe_allow_html=True
+    )
+    st.caption("点击上方链接可跳转到 Cytomaton 光谱查看器，查看该荧光基团的详细光谱曲线图。")
     if query:
         query_lower = query.lower()
         results = [
@@ -34,17 +46,6 @@ def show():
             
             st.dataframe(pd.DataFrame(table_data, columns=["序号", "荧光基团名称", "激发光 (Excitation)", "发射光 (Emission)"]))
             
-            # 在结果表格下方添加 Cytomaton 光谱查看器链接
-            st.divider()
-            st.markdown(
-                '<div style="text-align: center; padding: 12px; background-color: #f0f7ff; border-radius: 8px; border: 1px solid #4A90D9;">'
-                '<a href="https://www.cytomaton.ai/tools/fluorophore-spectrum-viewer" target="_blank" '
-                'style="display: inline-block; padding: 10px 24px; background-color: #4A90D9; color: white; '
-                'text-decoration: none; border-radius: 6px; font-weight: bold; font-size: 15px;">'
-                '🔬 在 Cytomaton 光谱查看器中查看完整光谱</a></div>',
-                unsafe_allow_html=True
-            )
-            st.caption("点击上方链接可跳转到 Cytomaton 光谱查看器，查看该荧光基团的详细光谱曲线图。")
         else:
             st.warning(f"未找到与 \"{query}\" 匹配的荧光基团，请尝试其他关键词。")
     else:

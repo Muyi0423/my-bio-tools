@@ -18,104 +18,129 @@ if 'needs_password_change' not in st.session_state:
 # 2. 读取已保存的密码（如果存在的话）
 saved_password = None
 if os.path.exists(PASSWORD_FILE):
-    with open(PASSWORD_FILE, "r") as f:
-        saved_password = json.load(f).get("password")
+    try:
+        with open(PASSWORD_FILE, "r") as f:
+            saved_password = json.load(f).get("password")
+    except Exception:
+        saved_password = None
 
-# 3. 检查是否已登录
+# 确定当前有效的验证密码
+current_valid_password = saved_password if saved_password else INITIAL_PASSWORD
+
+# ================= 🛑 拦截逻辑开始 =================
+
+# 情况A：还没登录 -> 显示登录框
 if not st.session_state.is_logged_in:
-    st.set_page_config(page_title="My Bio-Tools", page_icon="🔬")
+    st.set_page_config(page_title="My Bio-Tools 登录", page_icon="🔒")
     
+    # 居中显示登录框
     col1, col2, col3 = st.columns([1, 2, 1])
     with col2:
-        # 场景 A：需要修改密码
-        if st.session_state.needs_password_change:
-            st.title("🔑 首次登录安全设置")
-            st.warning("检测到您正在使用初始密码，为了安全起见，请设置一个复杂的新密码。")
-            
-            new_pwd = st.text_input("新密码", type="password", key="new_pwd")
-            confirm_pwd = st.text_input("确认新密码", type="password", key="confirm_pwd")
-            
-            if st.button("确认修改", type="primary"):
-                # 校验密码复杂度：大于8位，且包含字母和数字
-                has_alpha = any(c.isalpha() for c in new_pwd)
-                has_digit = any(c.isdigit() for c in new_pwd)
-                is_long_enough = len(new_pwd) >= 8
-                
-                if not (has_alpha and has_digit and is_long_enough):
-                    st.error("❌ 密码太简单！要求：至少8位，且必须同时包含字母和数字。")
-                elif new_pwd != confirm_pwd:
-                    st.error("❌ 两次输入的密码不一致，请重试。")
-                else:
-                    # 保存新密码
-                    with open(PASSWORD_FILE, "w") as f:
-                        json.dump({"password": new_pwd}, f)
-                    st.session_state.needs_password_change = False
-                    st.session_state.is_logged_in = True
-                    st.success("密码设置成功！正在进入系统...")
-                    st.rerun()
-
-        # 场景 B：正常的登录界面
-        else:
-            st.title("🔒 私人生物工具箱")
-            st.caption("请输入访问密码以继续")
-            
-            password = st.text_input("访问密码", type="password", key="pwd_input")
-            
-            if st.button("🔓 解锁进入", type="primary"):
-                # 判断密码是否匹配（优先匹配修改后的密码，其次匹配初始密码）
-                if password == saved_password or password == INITIAL_PASSWORD:
-                    st.session_state.is_logged_in = True
-                    # 如果用的是初始密码，强制要求改密
-                    if password == INITIAL_PASSWORD:
-                        st.session_state.needs_password_change = True
-                    st.rerun()
-                else:
-                    st.error("❌ 密码错误，请重试。")
+        st.title("🔒 私人生物工具箱")
+        st.caption("请输入访问密码")
+        
+        password_input = st.text_input("密码", type="password", label_visibility="collapsed")
+        
+        if st.button("进入系统", type="primary", use_container_width=True):
+            if password_input == current_valid_password:
+                st.session_state.is_logged_in = True
+                # 如果是初始密码，标记为需要修改
+                if password_input == INITIAL_PASSWORD and not saved_password:
+                    st.session_state.needs_password_change = True
+                st.rerun()
+            else:
+                st.error("密码错误，请重试！")
     
-    st.stop()  # 未登录状态下，阻止后续代码运行
+    st.stop() # 【关键】没登录时，在这里停止运行，不显示下面的内容
 
-# ================= 下面是你原来的主页代码 =================
+# 情况B：已登录，但需要改密码 -> 显示改密框
+if st.session_state.needs_password_change:
+    st.set_page_config(page_title="修改密码", page_icon="🔑")
+    st.title("🔑 首次登录，请修改密码")
+    st.warning("为了安全，请将初始密码修改为复杂密码（至少8位，包含字母和数字）。")
+    
+    new_pwd = st.text_input("新密码", type="password")
+    confirm_pwd = st.text_input("确认新密码", type="password")
+    
+    if st.button("确认修改", type="primary"):
+        if len(new_pwd) < 8:
+            st.error("密码长度不能少于8位！")
+        elif new_pwd != confirm_pwd:
+            st.error("两次输入的密码不一致！")
+        elif not any(c.isdigit() for c in new_pwd) or not any(c.isalpha() for c in new_pwd):
+            st.error("密码必须同时包含字母和数字！")
+        else:
+            # 保存新密码到文件
+            with open(PASSWORD_FILE, "w") as f:
+                json.dump({"password": new_pwd}, f)
+            st.success("密码修改成功！正在进入系统...")
+            st.session_state.needs_password_change = False
+            st.balloons()
+            st.sleep(1)
+            st.rerun()
+    
+    st.stop() # 【关键】改密时，也不显示下面的内容
+
+# ================= ✅ 登录成功且无需改密 -> 显示主页 =================
+
 st.set_page_config(page_title="My Bio-Tools", page_icon="🧬", layout="wide")
-st.title("🧬 My Bio-Tools 主页")
-st.markdown("欢迎回来！请选择你需要使用的工具：")
+
+# 这里放你原来的主页代码（工具卡片布局）
+st.title("🧬 My Bio-Tools 生物数据分析平台")
+st.markdown("欢迎使用！请点击下方卡片进入相应的分析工具。")
 st.divider()
 
-# 定义工具列表数据
-tools_data = [
-    {"title": "IC50 剂量反应曲线分析", "desc": "Page 1 - 工具一", "icon": "📊", "page": "pages/page1.py"},
-    {"title": "流式配色智能小助手", "desc": "Page 2 - 工具二", "icon": "🎨", "page": "pages/page2.py"},
-    {"title": "EC50 剂量反应曲线分析", "desc": "Page 3 - 工具三", "icon": "📈", "page": "pages/page3.py"},
-    {"title": "生物科研全能工具箱", "desc": "Page 4 - 工具四", "icon": "🧬", "page": "pages/page4.py"},
-    {"title": "荧光基团光谱查询工具", "desc": "Page 5 - 工具五", "icon": "💡", "page": "pages/page5.py"},
-]
+# --- 你的工具布局代码开始 ---
+# (这里保留你截图里显示的漂亮布局)
+col1, col2, col3 = st.columns(3)
 
-# 第一排：3个工具
-cols_row1 = st.columns(3)
-for i in range(3):
-    with cols_row1[i]:
-        tool = tools_data[i]
-        st.metric(label=tool["icon"], value=tool["title"])
-        st.caption(tool["desc"])
-        if st.button(f"打开 {tool['title']}", key=f"btn_{i}"):
-            st.switch_page(tool["page"])
+with col1:
+    st.markdown("""
+    <div style="border:1px solid #e0e0e0; padding:20px; border-radius:10px; height:200px;">
+        <h3>📊 IC50剂量反应曲线分析工具</h3>
+        <p>单组数据的剂量-反应曲线拟合，快速计算IC50值。</p>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("进入工具 1", key="b1"):
+        st.switch_page("pages/page1.py") # 假设你的工具在 pages 文件夹
 
-st.divider()
+with col2:
+    st.markdown("""
+    <div style="border:1px solid #e0e0e0; padding:20px; border-radius:10px; height:200px;">
+        <h3>🎨 流式配色智能小助手</h3>
+        <p>流式细胞术荧光配色方案推荐与优化，一键生成最佳荧光组合。</p>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("进入工具 2", key="b2"):
+        st.switch_page("pages/page2.py")
 
-# 第二排：2个工具 (居中)
-cols_row2 = st.columns([1, 1, 1])
-with cols_row2[0]:
-    tool = tools_data[3]
-    st.metric(label=tool["icon"], value=tool["title"])
-    st.caption(tool["desc"])
-    if st.button(f"打开 {tool['title']}", key=f"btn_{3}"):
-        st.switch_page(tool["page"])
+with col3:
+    st.markdown("""
+    <div style="border:1px solid #e0e0e0; padding:20px; border-radius:10px; height:200px;">
+        <h3>📈 EC50剂量反应曲线分析工具</h3>
+        <p>支持多化合物横向排版模板，自动批量计算EC50并生成报告。</p>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("进入工具 3", key="b3"):
+        st.switch_page("pages/page3.py")
 
-with cols_row2[1]:
-    tool = tools_data[4]
-    st.metric(label=tool["icon"], value=tool["title"])
-    st.caption(tool["desc"])
-    if st.button(f"打开 {tool['title']}", key=f"btn_{4}"):
-        st.switch_page(tool["page"])
+col4, col5 = st.columns(2)
+with col4:
+    st.markdown("""
+    <div style="border:1px solid #e0e0e0; padding:20px; border-radius:10px; height:200px;">
+        <h3>🔬 生物科研全能工具箱</h3>
+        <p>汇集多种生物科研常用计算工具，涵盖分子量、浓度稀释、缓冲液配制等。</p>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("进入工具 4", key="b4"):
+        st.switch_page("pages/page4.py")
 
-st.markdown("---")
-st.caption("© 2024 My Bio-Tools Private Station")
+with col5:
+    st.markdown("""
+    <div style="border:1px solid #e0e0e0; padding:20px; border-radius:10px; height:200px;">
+        <h3>💡 荧光基团光谱查询工具</h3>
+        <p>查询荧光基团的激发光和发射光波长，支持模糊搜索，快速定位所需荧光染料。</p>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("进入工具 5", key="b5"):
+        st.switch_page("pages/page5.py")

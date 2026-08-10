@@ -1,9 +1,10 @@
+
 import streamlit as st
 
 # --- 页面基础配置 ---
 st.set_page_config(
-    page_title="My Bio-Tools 主页", 
-    page_icon="🧬", 
+    page_title="My Bio-Tools 主页",
+    page_icon="🧬",
     layout="wide"
 )
 
@@ -46,42 +47,66 @@ st.title("🧬 My Bio-Tools 生物数据分析平台")
 st.markdown("欢迎使用！请点击下方卡片进入相应的分析工具。")
 st.divider()
 
-# --- 工具卡片区域 (3列布局) ---
+# --- 第一排：3列布局 ---
 col1, col2, col3 = st.columns(3)
 
 # === 工具 1 (对应 page1.py) ===
 with col1:
     st.markdown("""
     <div class="tool-card">
-        <div class="card-title">📊 基础数据清洗</div> <!-- 这里改你的工具1名字 -->
-        <p class="card-desc">用于处理原始实验数据，进行格式转换和初步筛选。</p>
+        <div class="card-title">📊 IC50剂量反应曲线分析工具</div>
+        <p class="card-desc">单组数据的剂量-反应曲线拟合，快速计算 IC50 值。</p>
     </div>
     """, unsafe_allow_html=True)
-    # 注意：这里的链接地址要和 pages 文件夹下的文件名一致，不加 .py
     if st.button("进入工具 1", key="btn1", use_container_width=True):
-        st.switch_page("pages/page1.py") 
+        st.switch_page("pages/page1.py")
 
 # === 工具 2 (对应 page2.py) ===
 with col2:
     st.markdown("""
     <div class="tool-card">
-        <div class="card-title">💊 IC50 计算工具</div> <!-- 这里改你的工具2名字 -->
-        <p class="card-desc">单组数据的剂量-反应曲线拟合，快速计算 IC50 值。</p>
+        <div class="card-title">🎨 流式配色智能小助手</div>
+        <p class="card-desc">流式细胞术荧光配色方案推荐与优化，一键生成最佳荧光组合。</p>
     </div>
     """, unsafe_allow_html=True)
     if st.button("进入工具 2", key="btn2", use_container_width=True):
         st.switch_page("pages/page2.py")
 
-# === 工具 3 (对应 page3.py - 刚做的 EC50) ===
+# === 工具 3 (对应 page3.py) ===
 with col3:
     st.markdown("""
     <div class="tool-card">
-        <div class="card-title">🧬 EC50 批量分析</div>
+        <div class="card-title">📈 EC50剂量反应曲线分析工具</div>
         <p class="card-desc">支持多化合物横向排版模板，自动批量计算 EC50 并生成报告。</p>
     </div>
     """, unsafe_allow_html=True)
     if st.button("进入工具 3", key="btn3", use_container_width=True):
         st.switch_page("pages/page3.py")
+
+# --- 第二排：2列布局（居中） ---
+col4, col5 = st.columns(2)
+
+# === 工具 4 (对应 page4.py) ===
+with col4:
+    st.markdown("""
+    <div class="tool-card">
+        <div class="card-title">🔬 生物科研全能工具箱</div>
+        <p class="card-desc">汇集多种生物科研常用计算工具，涵盖分子量、浓度稀释、缓冲液配制等。</p>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("进入工具 4", key="btn4", use_container_width=True):
+        st.switch_page("pages/page4.py")
+
+# === 工具 5 (对应 page5.py) ===
+with col5:
+    st.markdown("""
+    <div class="tool-card">
+        <div class="card-title">💡 荧光基团光谱查询工具</div>
+        <p class="card-desc">查询荧光基团的激发光和发射光波长，支持模糊搜索，快速定位所需荧光染料。</p>
+    </div>
+    """, unsafe_allow_html=True)
+    if st.button("进入工具 5", key="btn5", use_container_width=True):
+        st.switch_page("pages/page5.py")
 
 # --- 页脚 ---
 st.divider()

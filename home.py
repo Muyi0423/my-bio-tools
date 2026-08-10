@@ -1,113 +1,121 @@
-
 import streamlit as st
+import json
+import os
 
-# --- 页面基础配置 ---
-st.set_page_config(
-    page_title="My Bio-Tools 主页",
-    page_icon="🧬",
-    layout="wide"
-)
+# ================= 🔒 安全配置区域 =================
+# 这是出厂初始密码，仅供第一次登录使用
+INITIAL_PASSWORD = "123456" 
+# 用于保存你修改后的复杂密码的文件
+PASSWORD_FILE = "user_password.json"
+# ==================================================
 
-# --- 自定义 CSS 样式 (让卡片更好看) ---
-st.markdown("""
-<style>
-    /* 卡片容器样式 */
-    .tool-card {
-        background-color: #ffffff;
-        padding: 20px;
-        border-radius: 10px;
-        box-shadow: 0 4px 6px rgba(0,0,0,0.1);
-        border: 1px solid #e0e0e0;
-        height: 100%;
-        transition: transform 0.2s;
-    }
-    /* 鼠标悬停效果 */
-    .tool-card:hover {
-        transform: translateY(-5px);
-        box-shadow: 0 8px 12px rgba(0,0,0,0.15);
-    }
-    /* 标题样式 */
-    .card-title {
-        font-size: 1.5rem;
-        font-weight: bold;
-        color: #2c3e50;
-        margin-bottom: 10px;
-    }
-    /* 描述文字样式 */
-    .card-desc {
-        color: #666;
-        font-size: 1rem;
-        margin-bottom: 20px;
-    }
-</style>
-""", unsafe_allow_html=True)
+# 1. 初始化 Session State
+if 'is_logged_in' not in st.session_state:
+    st.session_state.is_logged_in = False
+if 'needs_password_change' not in st.session_state:
+    st.session_state.needs_password_change = False
 
-# --- 主页头部 ---
-st.title("🧬 My Bio-Tools 生物数据分析平台")
-st.markdown("欢迎使用！请点击下方卡片进入相应的分析工具。")
+# 2. 读取已保存的密码（如果存在的话）
+saved_password = None
+if os.path.exists(PASSWORD_FILE):
+    with open(PASSWORD_FILE, "r") as f:
+        saved_password = json.load(f).get("password")
+
+# 3. 检查是否已登录
+if not st.session_state.is_logged_in:
+    st.set_page_config(page_title="My Bio-Tools", page_icon="🔬")
+    
+    col1, col2, col3 = st.columns([1, 2, 1])
+    with col2:
+        # 场景 A：需要修改密码
+        if st.session_state.needs_password_change:
+            st.title("🔑 首次登录安全设置")
+            st.warning("检测到您正在使用初始密码，为了安全起见，请设置一个复杂的新密码。")
+            
+            new_pwd = st.text_input("新密码", type="password", key="new_pwd")
+            confirm_pwd = st.text_input("确认新密码", type="password", key="confirm_pwd")
+            
+            if st.button("确认修改", type="primary"):
+                # 校验密码复杂度：大于8位，且包含字母和数字
+                has_alpha = any(c.isalpha() for c in new_pwd)
+                has_digit = any(c.isdigit() for c in new_pwd)
+                is_long_enough = len(new_pwd) >= 8
+                
+                if not (has_alpha and has_digit and is_long_enough):
+                    st.error("❌ 密码太简单！要求：至少8位，且必须同时包含字母和数字。")
+                elif new_pwd != confirm_pwd:
+                    st.error("❌ 两次输入的密码不一致，请重试。")
+                else:
+                    # 保存新密码
+                    with open(PASSWORD_FILE, "w") as f:
+                        json.dump({"password": new_pwd}, f)
+                    st.session_state.needs_password_change = False
+                    st.session_state.is_logged_in = True
+                    st.success("密码设置成功！正在进入系统...")
+                    st.rerun()
+
+        # 场景 B：正常的登录界面
+        else:
+            st.title("🔒 私人生物工具箱")
+            st.caption("请输入访问密码以继续")
+            
+            password = st.text_input("访问密码", type="password", key="pwd_input")
+            
+            if st.button("🔓 解锁进入", type="primary"):
+                # 判断密码是否匹配（优先匹配修改后的密码，其次匹配初始密码）
+                if password == saved_password or password == INITIAL_PASSWORD:
+                    st.session_state.is_logged_in = True
+                    # 如果用的是初始密码，强制要求改密
+                    if password == INITIAL_PASSWORD:
+                        st.session_state.needs_password_change = True
+                    st.rerun()
+                else:
+                    st.error("❌ 密码错误，请重试。")
+    
+    st.stop()  # 未登录状态下，阻止后续代码运行
+
+# ================= 下面是你原来的主页代码 =================
+st.set_page_config(page_title="My Bio-Tools", page_icon="🧬", layout="wide")
+st.title("🧬 My Bio-Tools 主页")
+st.markdown("欢迎回来！请选择你需要使用的工具：")
 st.divider()
 
-# --- 第一排：3列布局 ---
-col1, col2, col3 = st.columns(3)
+# 定义工具列表数据
+tools_data = [
+    {"title": "IC50 剂量反应曲线分析", "desc": "Page 1 - 工具一", "icon": "📊", "page": "pages/page1.py"},
+    {"title": "流式配色智能小助手", "desc": "Page 2 - 工具二", "icon": "🎨", "page": "pages/page2.py"},
+    {"title": "EC50 剂量反应曲线分析", "desc": "Page 3 - 工具三", "icon": "📈", "page": "pages/page3.py"},
+    {"title": "生物科研全能工具箱", "desc": "Page 4 - 工具四", "icon": "🧬", "page": "pages/page4.py"},
+    {"title": "荧光基团光谱查询工具", "desc": "Page 5 - 工具五", "icon": "💡", "page": "pages/page5.py"},
+]
 
-# === 工具 1 (对应 page1.py) ===
-with col1:
-    st.markdown("""
-    <div class="tool-card">
-        <div class="card-title">📊 IC50剂量反应曲线分析工具</div>
-        <p class="card-desc">单组数据的剂量-反应曲线拟合，快速计算 IC50 值。</p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button("进入工具 1", key="btn1", use_container_width=True):
-        st.switch_page("pages/page1.py")
+# 第一排：3个工具
+cols_row1 = st.columns(3)
+for i in range(3):
+    with cols_row1[i]:
+        tool = tools_data[i]
+        st.metric(label=tool["icon"], value=tool["title"])
+        st.caption(tool["desc"])
+        if st.button(f"打开 {tool['title']}", key=f"btn_{i}"):
+            st.switch_page(tool["page"])
 
-# === 工具 2 (对应 page2.py) ===
-with col2:
-    st.markdown("""
-    <div class="tool-card">
-        <div class="card-title">🎨 流式配色智能小助手</div>
-        <p class="card-desc">流式细胞术荧光配色方案推荐与优化，一键生成最佳荧光组合。</p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button("进入工具 2", key="btn2", use_container_width=True):
-        st.switch_page("pages/page2.py")
-
-# === 工具 3 (对应 page3.py) ===
-with col3:
-    st.markdown("""
-    <div class="tool-card">
-        <div class="card-title">📈 EC50剂量反应曲线分析工具</div>
-        <p class="card-desc">支持多化合物横向排版模板，自动批量计算 EC50 并生成报告。</p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button("进入工具 3", key="btn3", use_container_width=True):
-        st.switch_page("pages/page3.py")
-
-# --- 第二排：2列布局（居中） ---
-col4, col5 = st.columns(2)
-
-# === 工具 4 (对应 page4.py) ===
-with col4:
-    st.markdown("""
-    <div class="tool-card">
-        <div class="card-title">🔬 生物科研全能工具箱</div>
-        <p class="card-desc">汇集多种生物科研常用计算工具，涵盖分子量、浓度稀释、缓冲液配制等。</p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button("进入工具 4", key="btn4", use_container_width=True):
-        st.switch_page("pages/page4.py")
-
-# === 工具 5 (对应 page5.py) ===
-with col5:
-    st.markdown("""
-    <div class="tool-card">
-        <div class="card-title">💡 荧光基团光谱查询工具</div>
-        <p class="card-desc">查询荧光基团的激发光和发射光波长，支持模糊搜索，快速定位所需荧光染料。</p>
-    </div>
-    """, unsafe_allow_html=True)
-    if st.button("进入工具 5", key="btn5", use_container_width=True):
-        st.switch_page("pages/page5.py")
-
-# --- 页脚 ---
 st.divider()
-st.caption("Powered by Streamlit | Developed for Bio-Analysis")
+
+# 第二排：2个工具 (居中)
+cols_row2 = st.columns([1, 1, 1])
+with cols_row2[0]:
+    tool = tools_data[3]
+    st.metric(label=tool["icon"], value=tool["title"])
+    st.caption(tool["desc"])
+    if st.button(f"打开 {tool['title']}", key=f"btn_{3}"):
+        st.switch_page(tool["page"])
+
+with cols_row2[1]:
+    tool = tools_data[4]
+    st.metric(label=tool["icon"], value=tool["title"])
+    st.caption(tool["desc"])
+    if st.button(f"打开 {tool['title']}", key=f"btn_{4}"):
+        st.switch_page(tool["page"])
+
+st.markdown("---")
+st.caption("© 2024 My Bio-Tools Private Station")

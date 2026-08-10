@@ -1,3 +1,4 @@
+
 import streamlit as st
 import pandas as pd
 import numpy as np
@@ -9,6 +10,7 @@ from openpyxl import Workbook
 from openpyxl.drawing.image import Image as OpenpyxlImage
 
 # --- 页面配置 ---
+st.set_page_config(page_title="IC50 高级分析工具 (Excel报告版)", layout="wide")
 st.title("🧪 IC50 剂量-反应曲线分析工具")
 
 # 创建两个标签页
@@ -34,7 +36,7 @@ with tab1:
     st.info("说明：左侧为原始数据输入，右侧为生成的曲线与参数。")
 
     # === 布局：强制左右分栏 ===
-    col_left, col_right = st.columns([0.4, 0.6])
+    col_left, col_right = st.columns([0.4, 0.6], gap="large")
 
     with col_left:
         # 左侧：原始数据输入
@@ -217,7 +219,7 @@ with tab2:
                 
                 # 循环处理每个化合物
                 for i in range(0, len(compound_list), 3):
-                    cols = st.columns(3)
+                    cols = st.columns(3, gap="large")
                     
                     for j in range(3):
                         index = i + j

@@ -76,7 +76,6 @@ if st.session_state.needs_password_change:
             st.success("密码修改成功！正在进入系统...")
             st.session_state.needs_password_change = False
             st.balloons()
-            st.sleep(1)
             st.rerun()
     
     st.stop() # 【关键】改密时，也不显示下面的内容
